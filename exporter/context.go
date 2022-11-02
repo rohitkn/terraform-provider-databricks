@@ -533,10 +533,12 @@ func (ic *importContext) dataToHcl(i importable, path []string,
 	})
 	for _, tuple := range ss {
 		a, as := tuple.Field, tuple.Schema
-		if as.Computed {
+		pathString := strings.Join(append(path, a), ".")
+		// TODO: we should analyze any field, not only computed!
+		if as.Computed && (i.OmitComputedField == nil ||
+			(i.OmitComputedField != nil && i.OmitComputedField(ic, pathString, d))) {
 			continue
 		}
-		pathString := strings.Join(append(path, a), ".")
 		raw, ok := d.GetOk(pathString)
 		for _, r := range i.Depends {
 			if r.Path == pathString && r.Variable {

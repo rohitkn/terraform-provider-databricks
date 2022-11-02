@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,6 +46,15 @@ type dbsqlListResponse struct {
 	Page       int64            `json:"page"`
 	TotalCount int64            `json:"count"`
 	PageSize   int64            `json:"page_size"`
+}
+
+func sliceContains[E comparable](slice []E, value E) bool {
+	for _, v := range slice {
+		if value == v {
+			return true
+		}
+	}
+	return false
 }
 
 // Generic function to list objects related to the DBSQL
@@ -296,6 +306,32 @@ var resourcesMap map[string]importable = map[string]importable{
 				})
 			}
 			return ic.importLibraries(r.Data, s)
+		},
+		OmitComputedField: func(ic *importContext, pathString string, d *schema.ResourceData) bool {
+			raw := d.Get(pathString)
+			log.Printf("[DEBUG] path=%s, raw='%v'", pathString, raw)
+			v := reflect.ValueOf(raw)
+			if v.IsZero() {
+				log.Printf("[DEBUG] path=%s is ignored because it has zero value '%v'", pathString, raw)
+				return true
+			}
+			shouldBeOmittedForInstancePool := []string{"enable_elastic_disk", "aws_attributes", "azure_attributes", "gcp_attributes"}
+			workerInstPoolID := d.Get("instance_pool_id").(string)
+			if pathString == "node_type_id" {
+				return workerInstPoolID != ""
+			} else if pathString == "driver_node_type_id" {
+				driverInstPoolID := d.Get("driver_instance_pool_id").(string)
+				nodeTypeID := d.Get("node_type_id").(string)
+				return workerInstPoolID != "" || driverInstPoolID != "" || raw.(string) == nodeTypeID
+			} else if pathString == "driver_instance_pool_id" {
+				return raw.(string) == workerInstPoolID
+			} else if sliceContains(shouldBeOmittedForInstancePool, pathString) {
+				return workerInstPoolID != ""
+			} else if pathString == "enable_local_disk_encryption" {
+				return false
+			}
+
+			return true
 		},
 	},
 	"databricks_job": {
