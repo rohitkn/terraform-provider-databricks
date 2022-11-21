@@ -517,22 +517,24 @@ var resourcesMap map[string]importable = map[string]importable{
 			return nil
 		},
 		Import: func(ic *importContext, r *resource) error {
-			groupName := r.Data.Get("display_name").(string)
-			if groupName == "admins" || groupName == "users" {
-				// admins & users are to be imported through "data block"
-				r.Mode = "data"
-				r.Data.Set("workspace_access", false)
-				r.Data.Set("databricks_sql_access", false)
-				r.Data.Set("allow_instance_pool_create", false)
-				r.Data.Set("allow_cluster_create", false)
-				r.Data.State().Set(&terraform.InstanceState{
-					ID: r.ID,
-					Attributes: map[string]string{
-						"display_name": r.Name,
-					},
-				})
-			} else if r.Data != nil {
-				r.Data.Set("force", true)
+			if r.Data != nil {
+				groupName := r.Data.Get("display_name").(string)
+				if groupName == "admins" || groupName == "users" {
+					// admins & users are to be imported through "data block"
+					r.Mode = "data"
+					r.Data.Set("workspace_access", false)
+					r.Data.Set("databricks_sql_access", false)
+					r.Data.Set("allow_instance_pool_create", false)
+					r.Data.Set("allow_cluster_create", false)
+					r.Data.State().Set(&terraform.InstanceState{
+						ID: r.ID,
+						Attributes: map[string]string{
+							"display_name": r.Name,
+						},
+					})
+				} else {
+					r.Data.Set("force", true)
+				}
 			}
 			if err := ic.cacheGroups(); err != nil {
 				return err
