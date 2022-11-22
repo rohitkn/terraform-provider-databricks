@@ -115,9 +115,12 @@ func TestGroup(t *testing.T) {
 			},
 		},
 	}
+	d := scim.ResourceGroup().TestResourceData()
+	d.Set("display_name", "foo")
 	r := &resource{
 		Value:     "foo",
 		Attribute: "display_name",
+		Data:      d,
 	}
 	err := ic.Importables["databricks_group"].Search(ic, r)
 	assert.NoError(t, err)
@@ -306,9 +309,11 @@ func TestGroupCacheError(t *testing.T) {
 			ID: "nonsense",
 		})
 		assert.EqualError(t, err, "nope")
+		d := scim.ResourceGroup().TestResourceData()
 
 		err = resourcesMap["databricks_group"].Import(ic, &resource{
-			ID: "nonsense",
+			ID:   "nonsense",
+			Data: d,
 		})
 		assert.EqualError(t, err, "nope")
 	})
