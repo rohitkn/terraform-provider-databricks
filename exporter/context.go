@@ -66,6 +66,7 @@ type importContext struct {
 	testEmits         map[string]bool
 	sqlDatasources    map[string]string
 	sqlVisualizations map[string]string
+	workspaceConfKeys map[string]any
 
 	includeUserDomains  bool
 	debug               bool
@@ -95,6 +96,14 @@ var nameFixes = []regexFix{
 	{regexp.MustCompile(`[_]{2,}`), "_"},
 }
 
+var workspaceConfKeys = map[string]any{
+	"enableIpAccessLists":                              false,
+	"enableTokensConfig":                               false,
+	"maxTokenLifetimeDays":                             0,
+	"maxUserInactiveDays":                              0,
+	"storeInteractiveNotebookResultsInCustomerAccount": false,
+}
+
 func newImportContext(c *common.DatabricksClient) *importContext {
 	p := provider.DatabricksProvider()
 	p.TerraformVersion = "exporter"
@@ -121,6 +130,8 @@ func newImportContext(c *common.DatabricksClient) *importContext {
 		},
 		allUsers:  []scim.User{},
 		variables: map[string]string{},
+
+		workspaceConfKeys: workspaceConfKeys,
 	}
 }
 
